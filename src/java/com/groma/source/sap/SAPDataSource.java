@@ -72,31 +72,25 @@ public final class SAPDataSource implements IDataSource {
         JCoTable dfies = tables.getTable("DFIES_TAB");
         int rowCount = dfies.getNumRows();
         Collection<ColumnInfo> columns = new Collection<ColumnInfo>(rowCount);
-        DataTypePackage typePackage = new DataTypePackage();
+        DataTypeInfo typeInfo = new DataTypeInfo();
         for (int i = 0; i < rowCount; i++) {
             dfies.setRow(i);
-            typePackage.reset();
-            Metadata.getDataType(dfies.getString("DATATYPE"), typePackage);
-            if (typePackage.ColumnSize == -1) {
-                int kind = typePackage.getDataTypeKind();
-                switch (kind) {
-                    case DataTypePackage.KIND_NUMBER:
-                        typePackage.ColumnSize = dfies.getInt("INTTYPE");
-                        break;
-                    default:
-                        typePackage.ColumnSize = dfies.getInt("LENG");
-                        break;
+            typeInfo.reset();
+            DataTypeUtil.getDataType(dfies.getString("DATATYPE"), typeInfo);
+            if (typeInfo.ColumnSize == -1) {
+                if (DataTypeUtil.isNumericDataType(typeInfo.TypeCode)) {
+                    typeInfo.ColumnSize = dfies.getInt("INTTYPE");
+                } else {
+                    typeInfo.ColumnSize = dfies.getInt("LENG");
                 }
-
-                typePackage.ColumnSize = (int)dfies.getInt("LENG");
             }
 
-            if (typePackage.Precision == -1) {
-                typePackage.Precision = (byte)dfies.getInt("LENG");
+            if (typeInfo.Precision == -1) {
+                typeInfo.Precision = (byte)dfies.getInt("LENG");
             }
 
-            if (typePackage.Scale == -1) {
-                typePackage.Scale = (byte)dfies.getInt("DECIMALS");
+            if (typeInfo.Scale == -1) {
+                typeInfo.Scale = (byte)dfies.getInt("DECIMALS");
             }
 
             Object DATATYPE = dfies.getValue("DATATYPE");
@@ -115,7 +109,7 @@ public final class SAPDataSource implements IDataSource {
 
             ColumnInfo info = new ColumnInfo(
                     dfies.getString("TABNAME"), dfies.getString("FIELDNAME"),
-                    typePackage.TypeCode, (short)0, typePackage.ColumnSize, typePackage.Precision, typePackage.Scale, null
+                    typeInfo.TypeCode, (short)0, typeInfo.ColumnSize, typeInfo.Precision, typeInfo.Scale, null
             );
 
             columns.add(info);
